@@ -17,13 +17,16 @@ import (
 	"github.com/jinzhu/configor"
 )
 
+type ElevenLabsConfig struct {
+	Enabled bool `default:"false"`
+	VoiceId string `required:"true"`
+	Model string `default:"eleven_multilingual_v2"`
+	Token string `required:"true"`
+	settings elevenlabs.VoiceSettings `required:"false"`
+}
+
 type Config struct {
-	Elevenlabs struct {
-		Enabled bool `default:"false"`
-		VoiceId string `required:"true"`
-		Model string `default:"eleven_multilingual_v2"`
-		Token string `required:"true"`
-	}
+	Elevenlabs ElevenLabsConfig
 	Port string `default:"8080"`
 }
 
@@ -36,13 +39,10 @@ var (
 )
 
 func main() {
-	err := configor.Load(&config, "sven.yml")
+	err := configor.Load(&config, "/etc/sven.yml", "sven.yml")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading config file", err)
 	}
-	elevenlabsToken := config.Elevenlabs.Token
-	voiceId := config.Elevenlabs.VoiceId
-	model := config.Elevenlabs.Model
 
 	var text string
 	if len(os.Args) == 1 {
@@ -52,10 +52,9 @@ func main() {
 	} else {
 		text = strings.Join(os.Args[1:], " ")
 	}
-	err = elevenlabsTTS(text, model, voiceId, elevenlabsToken)
+	err = elevenlabsTTS(text, config.Elevenlabs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v", err)
-		os.Exit(1)
+		log.Fatal("error: " + err.Error())
 	}
 }
 
@@ -67,7 +66,7 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-	err = elevenlabsTTS(req.Text, config.Elevenlabs.Model, config.Elevenlabs.VoiceId, config.Elevenlabs.Token)
+	err = elevenlabsTTS(req.Text, config.Elevenlabs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "elevelabs error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -76,14 +75,15 @@ func handleTTS(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-func elevenlabsTTS(text string, model string, voiceId string, token string) error {
+func elevenlabsTTS(text string, config ElevenLabsConfig) error {
 
-	client := elevenlabs.NewClient(context.Background(), token, 30*time.Second)
+	client := elevenlabs.NewClient(context.Background(), config.Token, 30*time.Second)
 	ttsReq := elevenlabs.TextToSpeechRequest{
 		Text:    text,
-		ModelID: model,
+		ModelID: config.Model,
+		VoiceSettings: &config.settings,
 	}
-	audio, err := client.TextToSpeech(voiceId, ttsReq)
+	audio, err := client.TextToSpeech(config.VoiceId, ttsReq)
 	if err != nil {
 		return err
 	}
