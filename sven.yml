@@ -1,9 +1,10 @@
 elevenlabs:
   voiceid: iP95p4xoKVk53GoZ742B
-  model: eleven_multilingual_v2
+  model: eleven_turbo_v2_5
   token: 
-  settings:
-    stability: 0.71
-    style: 0.0
-    similarity_boost: 0.5
-    use_speaker_boost: true
+  # settings:
+  #   stability: 0.71
+  #   style: 0.0
+  #   similarityboost: 0.5
+  #   speakerboost: true
+port: :3000
