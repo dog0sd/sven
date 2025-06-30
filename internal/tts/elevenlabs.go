@@ -14,7 +14,7 @@ import (
 	"github.com/dog0sd/sven/internal/config"
 )
 
-func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
+func ElevenlabsTTS(elConfig config.ElevenLabsConfig, text string, previousText string) error {
 	client := elevenlabs.NewClient(context.Background(), elConfig.Token, 30*time.Second)
 	var voiceSettings elevenlabs.VoiceSettings
 	voiceSettings.SimilarityBoost = elConfig.Settings.SimilarityBoost
@@ -27,6 +27,7 @@ func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 		Text:          text,
 		ModelID:       elConfig.Model,
 		VoiceSettings: &voiceSettings,
+		PreviousText:  previousText,
 	}
 	audio, err := client.TextToSpeech(elConfig.VoiceId, ttsReq)
 	if err != nil {

@@ -23,7 +23,7 @@ func main() {
 	} else {
 		var text = strings.TrimSpace(strings.Join(os.Args[1:], " "))
 		if text != "" {
-			if err = tts.ElevenlabsTTS(text, config.Elevenlabs); err != nil {
+			if err = tts.ElevenlabsTTS(config.Elevenlabs, text, ""); err != nil {
 				log.Fatal("error transcripting using elevenlabs: ", err)
 			}
 		}

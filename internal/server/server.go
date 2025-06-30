@@ -28,6 +28,7 @@ type elevenLabsConfig struct {
 type TTSRequest struct {
 	Text       string           `json:"text"`
 	Elevenlabs elevenLabsConfig `json:"voice_settings"`
+	PText      string           `json:"ptext"` // Previous text
 }
 
 func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
@@ -38,8 +39,8 @@ func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-	mergeElevenLabsTTSSettings(reqBody, &config)
-	err = tts.ElevenlabsTTS(reqBody.Text, config.Elevenlabs)
+	reqConfig := mergeElevenLabsTTSSettings(reqBody, &config)
+	err = tts.ElevenlabsTTS(reqConfig.Elevenlabs, reqBody.Text, reqBody.PText)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "elevelabs error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -48,20 +49,22 @@ func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
 	w.Write([]byte("OK"))
 }
 
-func mergeElevenLabsTTSSettings(req TTSRequest, config *config.Config) {
+func mergeElevenLabsTTSSettings(req TTSRequest, c *config.Config) *config.Config {
+	reqConfig := *c
 	if req.Elevenlabs.Model != "" {
-		config.Elevenlabs.Model = req.Elevenlabs.Model
+		reqConfig.Elevenlabs.Model = req.Elevenlabs.Model
 	}
 	if req.Elevenlabs.SimilarityBoost != 0.0 {
-		config.Elevenlabs.Settings.SimilarityBoost = req.Elevenlabs.SimilarityBoost
+		reqConfig.Elevenlabs.Settings.SimilarityBoost = req.Elevenlabs.SimilarityBoost
 	}
 	if req.Elevenlabs.Stability != 0.0 {
-		config.Elevenlabs.Settings.Stability = req.Elevenlabs.Stability
+		reqConfig.Elevenlabs.Settings.Stability = req.Elevenlabs.Stability
 	}
 	if req.Elevenlabs.Style != 0.0 {
-		config.Elevenlabs.Settings.Style = req.Elevenlabs.Style
+		reqConfig.Elevenlabs.Settings.Style = req.Elevenlabs.Style
 	}
 	if req.Elevenlabs.Speed != 1.0 {
-		config.Elevenlabs.Settings.Speed = req.Elevenlabs.Speed
+		reqConfig.Elevenlabs.Settings.Speed = req.Elevenlabs.Speed
 	}
+	return &reqConfig
 }
