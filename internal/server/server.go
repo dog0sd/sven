@@ -22,11 +22,12 @@ type elevenLabsConfig struct {
 	SimilarityBoost float32 `json:"similarity_boost"`
 	Stability       float32 `json:"stability"`
 	Style           float32 `json:"style"`
+	Speed           float32 `json:"speed"`
 }
 
 type TTSRequest struct {
 	Text       string           `json:"text"`
-	Elevenlabs elevenLabsConfig `json:"11labs"`
+	Elevenlabs elevenLabsConfig `json:"voice_settings"`
 }
 
 func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
@@ -59,5 +60,8 @@ func mergeElevenLabsTTSSettings(req TTSRequest, config *config.Config) {
 	}
 	if req.Elevenlabs.Style != 0.0 {
 		config.Elevenlabs.Settings.Style = req.Elevenlabs.Style
+	}
+	if req.Elevenlabs.Speed != 1.0 {
+		config.Elevenlabs.Settings.Speed = req.Elevenlabs.Speed
 	}
 }
