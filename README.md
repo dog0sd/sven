@@ -39,9 +39,14 @@ curl -H "content-type: application/json" -d '{"text":"Hello World!","voice_setti
 - Text-to-speech conversion via command line
 - Support for ElevenLabs cloud TTS
 - Tweaking voice settings
+- Understanding context with "ptext" value in request body
 
 ## TODO
 - `--help` flag
-- Add [cloud] google TTS support
-- Add batch processing support
 - write README
+- specify exact output format for api request
+- async playing audio
+- check values boundaries in request and config during startup
+- ~~optional previos_text for context~~
+- specify voice by name
+- log format for the server
