@@ -30,7 +30,7 @@ Overriding voice settings available only in server mode.
 
 The same settings you can adjust during any HTTP request:  
 ```bash
-curl -H "content-type: application/json" -d '{"text":"Hello World!","voice_settings":{"speed":1.5}}' localhost:8080/tts
+curl -H "content-type: application/json" -d '{"text":"Hello World!","voice_settings":{"speed":1.2}}' localhost:8080/tts
 ```
 
 ## Features
