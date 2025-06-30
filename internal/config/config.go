@@ -17,6 +17,7 @@ func LoadConfig() (Config, error) {
 	fmt.Printf("Default Stability: %.2f\n", config.Elevenlabs.Settings.Stability)
 	fmt.Printf("Default Style: %.2f\n", config.Elevenlabs.Settings.Style)
 	fmt.Printf("SpeakerBoost: %v\n", config.Elevenlabs.Settings.SpeakerBoost)
+	fmt.Printf("Speed: %.2f\n", config.Elevenlabs.Settings.Speed)
 	if err != nil {
 		return config, err
 	}

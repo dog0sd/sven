@@ -3,10 +3,11 @@ package tts
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/haguro/elevenlabs-go"
+	"github.com/Mliviu79/elevenlabs-go"
 	"github.com/hajimehoshi/go-mp3"
 	"github.com/hajimehoshi/oto"
 
@@ -21,6 +22,8 @@ func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 	voiceSettings.Stability = elConfig.Settings.Stability
 	voiceSettings.Style = elConfig.Settings.Style
 	voiceSettings.SpeakerBoost = elConfig.Settings.SpeakerBoost
+	voiceSettings.Speed = elConfig.Settings.Speed
+
 	ttsReq := elevenlabs.TextToSpeechRequest{
 		Text:    text,
 		ModelID: elConfig.Model,
@@ -28,24 +31,25 @@ func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 	}
 	audio, err := client.TextToSpeech(elConfig.VoiceId, ttsReq)
 	if err != nil {
-		return err
+		return fmt.Errorf("request error: %v", err)
 	}
-
-	decoder, err := mp3.NewDecoder(bytes.NewReader(audio))
+	reader := bytes.NewReader(audio)
+	decoder, err := mp3.NewDecoder(reader)
+		
 	if err != nil {
-		return err
+		return fmt.Errorf("decode error: %v", err)
 	}
 
 	ctx, err := oto.NewContext(decoder.SampleRate(), 2, 2, 8192)
 	if err != nil {
-		return err
+		return fmt.Errorf("oto context error: %v", err)
 	}
 	defer ctx.Close()
 
 	p := ctx.NewPlayer()
 	defer p.Close()
 	if _, err := io.Copy(p, decoder); err != nil {
-		return err
+		return fmt.Errorf("playing audio error: %v", err)
 	}
 	return nil
 }
