@@ -6,7 +6,6 @@ import (
 	"github.com/jinzhu/configor"
 )
 
-
 func LoadConfig() (Config, error) {
 	var config Config
 

@@ -1,6 +1,5 @@
 package config
 
-
 type elevenlabsVoiceSettings struct {
 	SimilarityBoost float32 `required:"false" default:"1.0"`
 	Stability       float32 `required:"false" default:"1.0"`

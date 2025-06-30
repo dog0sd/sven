@@ -14,7 +14,6 @@ import (
 	"github.com/dog0sd/sven/internal/config"
 )
 
-
 func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 	client := elevenlabs.NewClient(context.Background(), elConfig.Token, 30*time.Second)
 	var voiceSettings elevenlabs.VoiceSettings
@@ -25,8 +24,8 @@ func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 	voiceSettings.Speed = elConfig.Settings.Speed
 
 	ttsReq := elevenlabs.TextToSpeechRequest{
-		Text:    text,
-		ModelID: elConfig.Model,
+		Text:          text,
+		ModelID:       elConfig.Model,
 		VoiceSettings: &voiceSettings,
 	}
 	audio, err := client.TextToSpeech(elConfig.VoiceId, ttsReq)
@@ -35,7 +34,7 @@ func ElevenlabsTTS(text string, elConfig config.ElevenLabsConfig) error {
 	}
 	reader := bytes.NewReader(audio)
 	decoder, err := mp3.NewDecoder(reader)
-		
+
 	if err != nil {
 		return fmt.Errorf("decode error: %v", err)
 	}

@@ -10,13 +10,12 @@ import (
 	"github.com/dog0sd/sven/internal/tts"
 )
 
-
 func main() {
 	var config, err = config.LoadConfig()
 	if err != nil {
 		log.Fatal("error loading configuration: err")
 	}
-	
+
 	if len(os.Args) == 1 {
 		if err := server.StartServer(config.Port, config); err != nil {
 			log.Fatal("HTTP server failed: ", err)
