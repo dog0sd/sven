@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -11,6 +13,15 @@ import (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Printf("Usage: %s [text]\n", os.Args[0])
+		fmt.Printf("CLI mode: %s 'Hello, world!'\n", os.Args[0])
+		fmt.Println("OR")
+		fmt.Printf("Server mode: %s\n", os.Args[0])
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+	flag.Parse()
 	var config, err = config.LoadConfig()
 	if err != nil {
 		log.Fatal("error loading configuration: err")
