@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 	var config, err = config.LoadConfig()
 	if err != nil {
-		log.Fatal("error loading configuration: err")
+		log.Fatalf("error loading configuration: %v", err)
 	}
 
 	if len(os.Args) == 1 {
