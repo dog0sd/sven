@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/jinzhu/configor"
 )
@@ -11,11 +12,28 @@ func LoadConfig() (Config, error) {
 
 	err := configor.Load(&config, "/etc/sven.yml", "sven.yml")
 	if err != nil {
+		
 		return config, err
 	}
 	if err = validateElevenLabsSettings(config); err != nil {
 		return config, err
 	}
+	return config, nil
+}
+
+func LoadConfigFromEnv() (Config, error) {
+	var config Config
+	config.Elevenlabs.Token = os.Getenv("ELEVENLABS_API_KEY")
+	config.Elevenlabs.VoiceId = os.Getenv("ELEVENLABS_VOICE_ID")
+	config.Elevenlabs.Model = os.Getenv("ELEVENLABS_MODEL")
+	if config.Elevenlabs.Token == "" || config.Elevenlabs.VoiceId == "" {
+		return config, fmt.Errorf("ELEVENLABS_API_KEY or ELEVENLABS_VOICE_ID is empty")
+	}
+	if config.Elevenlabs.Model == "" {
+		config.Elevenlabs.Model = "eleven_turbo_v2_5"
+	}
+	config.Elevenlabs.Settings.Stability = 1.0
+	config.Elevenlabs.Settings.Speed = 1.0
 	return config, nil
 }
 
