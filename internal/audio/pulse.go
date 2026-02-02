@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"github.com/hajimehoshi/go-mp3"
 	"github.com/jfreymuth/pulse"
@@ -43,23 +44,42 @@ func (p *PulsePlayer) Play(mp3Data []byte) error {
 		floatSamples[i] = float32(s) / 32768.0
 	}
 
+	sampleRate := decoder.SampleRate()
+	totalFrames := len(samples) / 2 // stereo
+	audioDuration := time.Duration(int64(totalFrames)*1000/int64(sampleRate)) * time.Millisecond
+
 	client, err := pulse.NewClient()
 	if err != nil {
 		return fmt.Errorf("pulse client error: %v", err)
 	}
 	defer client.Close()
 
+	// We must NOT return EndOfData before Start() completes, because the
+	// pulse library's Start() waits on <-p.started, but the "started"
+	// callback only fires when state==running. If the reader returns
+	// EndOfData during the first buffer fill (before "Started" arrives),
+	// the state transitions to idle and Start() deadlocks.
+	//
+	// Solution: once all real audio data is consumed, return silence instead
+	// of EndOfData. We stop the stream ourselves after the audio duration.
+	offset := 0
+	totalSamples := len(floatSamples)
+
 	playback, err := client.NewPlayback(
 		pulse.Float32Reader(func(buf []float32) (int, error) {
-			if len(floatSamples) == 0 {
-				return 0, pulse.EndOfData
+			if offset >= totalSamples {
+				for i := range buf {
+					buf[i] = 0
+				}
+				return len(buf), nil
 			}
-			n := copy(buf, floatSamples)
-			floatSamples = floatSamples[n:]
+			remaining := floatSamples[offset:]
+			n := copy(buf, remaining)
+			offset += n
 			return n, nil
 		}),
 		pulse.PlaybackStereo,
-		pulse.PlaybackSampleRate(decoder.SampleRate()),
+		pulse.PlaybackSampleRate(sampleRate),
 		pulse.PlaybackMediaName("sven"),
 	)
 	if err != nil {
@@ -67,8 +87,12 @@ func (p *PulsePlayer) Play(mp3Data []byte) error {
 	}
 
 	playback.Start()
-	playback.Drain()
+
+	// Wait for the audio to finish playing, plus buffer for PulseAudio latency
+	time.Sleep(audioDuration + 300*time.Millisecond)
+
 	playback.Stop()
+	playback.Close()
 
 	return nil
 }
