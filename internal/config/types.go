@@ -17,6 +17,7 @@ type ElevenLabsConfig struct {
 }
 
 type Config struct {
-	Elevenlabs ElevenLabsConfig
-	Port       string `default:":8080"`
+	Elevenlabs   ElevenLabsConfig
+	Port         string `default:":8080"`
+	AudioBackend string `default:"pulse"`
 }
