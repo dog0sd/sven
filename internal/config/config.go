@@ -18,6 +18,9 @@ func LoadConfig() (Config, error) {
 	if err = validateElevenLabsSettings(config); err != nil {
 		return config, err
 	}
+	if err = validateAudioBackend(&config); err != nil {
+		return config, err
+	}
 	return config, nil
 }
 
@@ -34,6 +37,7 @@ func LoadConfigFromEnv() (Config, error) {
 	}
 	config.Elevenlabs.Settings.Stability = 1.0
 	config.Elevenlabs.Settings.Speed = 1.0
+	config.AudioBackend = "pulse"
 	return config, nil
 }
 
@@ -57,5 +61,18 @@ func validateElevenLabsSettings(config Config) error {
 	fmt.Printf("[startup] default style: %.2f\n", config.Elevenlabs.Settings.Style)
 	fmt.Printf("[startup] default speaker boost: %v\n", config.Elevenlabs.Settings.SpeakerBoost)
 	fmt.Printf("[startup] default speed: %.2f\n", config.Elevenlabs.Settings.Speed)
+	return nil
+}
+
+func validateAudioBackend(config *Config) error {
+	switch config.AudioBackend {
+	case "pulse", "oto":
+		// valid
+	case "":
+		config.AudioBackend = "pulse"
+	default:
+		return fmt.Errorf("invalid audiobackend %q (supported: pulse, oto)", config.AudioBackend)
+	}
+	fmt.Printf("[startup] audio backend: %s\n", config.AudioBackend)
 	return nil
 }

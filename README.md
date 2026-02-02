@@ -23,7 +23,9 @@ SVEN enables you to convert text to speech via a simple API or command line, wit
 
 ## Features
 - Text-to-speech conversion via HTTP API and CLI
+- MCP (Model Context Protocol) server mode for AI assistant integration
 - Support for ElevenLabs cloud TTS
+- Pluggable audio backends: PulseAudio/PipeWire (`pulse`) and ALSA (`oto`)
 - Customizable voice settings (speed, style, etc.)
 - Context-aware synthesis with `ptext` (previous text)
 
@@ -37,6 +39,9 @@ Download the latest binary from the [releases](/releases) page.
 ### Configuration
 Create a `sven.yml` file in the same directory as the binary with the following content:
 ```yaml
+# Audio backend: "pulse" (PulseAudio/PipeWire) or "oto" (ALSA)
+audiobackend: pulse
+
 elevenlabs:
   voiceid: iP95p4xoKVk53GoZ742B
   model: eleven_turbo_v2_5
@@ -49,10 +54,21 @@ elevenlabs:
 ./sven "Hello World!"
 ```
 
+**With a specific audio backend:**
+```bash
+./sven -backend oto "Hello World!"
+```
+
 **Server Mode:**
 ```bash
 ./sven
 ```
+
+**MCP Server Mode:**
+```bash
+./mcp-server
+```
+The MCP server exposes a `voice_it` tool over stdio, allowing AI assistants (e.g. Claude) to speak text aloud. Configure it via `ELEVENLABS_TOKEN` and `ELEVENLABS_VOICEID` environment variables.
 
 ---
 
@@ -95,8 +111,9 @@ curl -H "content-type: application/json" -d '{"text":"How are you?","ptext":"Hi,
 ---
 
 ## Dependencies
-- Go 1.20+
-- Elevenlabs account
+- Go 1.22+
+- ElevenLabs account
+- PulseAudio/PipeWire (`pulse` backend) or ALSA (`oto` backend)
 
 ---
 
@@ -114,4 +131,6 @@ Contributions, issues, and feature requests are welcome! Please open an issue or
 - Structured log format for the server
 - Pronunciation dictionary support in config
 - ~~Optional previous_text for context~~
+- ~~MCP server mode~~
+- ~~Pluggable audio backends~~
 

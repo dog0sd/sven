@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/dog0sd/sven/internal/audio"
 	"github.com/dog0sd/sven/internal/config"
 	"github.com/dog0sd/sven/internal/tts"
 )
 
-func StartServer(port string, config config.Config) error {
+func StartServer(port string, config config.Config, player audio.Player) error {
 	http.HandleFunc("/tts", func(w http.ResponseWriter, r *http.Request) {
-		handleTTS(w, r, config)
+		handleTTS(w, r, config, player)
 	})
 	return http.ListenAndServe(port, nil)
 }
@@ -31,7 +32,7 @@ type TTSRequest struct {
 	PText      string           `json:"ptext"` // Previous text
 }
 
-func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
+func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config, player audio.Player) {
 	reqBody := TTSRequest{}
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
@@ -40,9 +41,14 @@ func handleTTS(w http.ResponseWriter, r *http.Request, config config.Config) {
 		return
 	}
 	reqConfig := mergeElevenLabsTTSSettings(reqBody, &config)
-	err = tts.ElevenlabsTTS(reqConfig.Elevenlabs, reqBody.Text, reqBody.PText)
+	mp3Data, err := tts.Synthesize(reqConfig.Elevenlabs, reqBody.Text, reqBody.PText)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "elevelabs error: %v", err)
+		fmt.Fprintf(os.Stderr, "elevenlabs error: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if err := player.Play(mp3Data); err != nil {
+		fmt.Fprintf(os.Stderr, "playback error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}

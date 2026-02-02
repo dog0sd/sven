@@ -8,13 +8,14 @@ require (
 	github.com/Mliviu79/elevenlabs-go v0.2.1
 	github.com/hajimehoshi/go-mp3 v0.3.4
 	github.com/hajimehoshi/oto v1.0.1
+	github.com/jfreymuth/pulse v0.1.1
 	github.com/jinzhu/configor v1.2.2
+	github.com/mark3labs/mcp-go v0.33.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/mark3labs/mcp-go v0.33.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8 // indirect

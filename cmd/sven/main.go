@@ -7,14 +7,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dog0sd/sven/internal/audio"
 	"github.com/dog0sd/sven/internal/config"
 	"github.com/dog0sd/sven/internal/server"
 	"github.com/dog0sd/sven/internal/tts"
 )
 
 func main() {
+	backend := flag.String("backend", "", "audio backend: pulse or oto (overrides config)")
 	flag.Usage = func() {
-		fmt.Printf("Usage: %s [text]\n", os.Args[0])
+		fmt.Printf("Usage: %s [flags] [text]\n", os.Args[0])
 		fmt.Printf("CLI mode: %s 'Hello, world!'\n", os.Args[0])
 		fmt.Println("OR")
 		fmt.Printf("Server mode: %s\n", os.Args[0])
@@ -22,20 +24,34 @@ func main() {
 		os.Exit(0)
 	}
 	flag.Parse()
-	var config, err = config.LoadConfig()
+
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("error loading configuration: %v", err)
 	}
 
-	if len(os.Args) == 1 {
-		if err := server.StartServer(config.Port, config); err != nil {
+	if *backend != "" {
+		cfg.AudioBackend = *backend
+	}
+
+	player, err := audio.NewPlayer(cfg.AudioBackend)
+	if err != nil {
+		log.Fatalf("error creating audio player: %v", err)
+	}
+
+	if flag.NArg() == 0 {
+		if err := server.StartServer(cfg.Port, cfg, player); err != nil {
 			log.Fatal("HTTP server failed: ", err)
 		}
 	} else {
-		var text = strings.TrimSpace(strings.Join(os.Args[1:], " "))
+		text := strings.TrimSpace(strings.Join(flag.Args(), " "))
 		if text != "" {
-			if err = tts.ElevenlabsTTS(config.Elevenlabs, text, ""); err != nil {
-				log.Fatal("error transcripting using elevenlabs: ", err)
+			mp3Data, err := tts.Synthesize(cfg.Elevenlabs, text, "")
+			if err != nil {
+				log.Fatal("elevenlabs synthesis error: ", err)
+			}
+			if err := player.Play(mp3Data); err != nil {
+				log.Fatal("playback error: ", err)
 			}
 		}
 	}
