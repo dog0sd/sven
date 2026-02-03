@@ -10,9 +10,19 @@ import (
 func LoadConfig() (Config, error) {
 	var config Config
 
-	err := configor.Load(&config, "/etc/sven.yml", "sven.yml")
+	// Build config paths in priority order (first found wins)
+	configPaths := []string{"sven.yml", "sven.yaml"}
+	
+	if home, err := os.UserHomeDir(); err == nil {
+		configPaths = append(configPaths,
+			home+"/.config/sven.yml",
+			home+"/.config/sven.yaml",
+		)
+	}
+	configPaths = append(configPaths, "/etc/sven.yml", "/etc/sven.yaml")
+
+	err := configor.Load(&config, configPaths...)
 	if err != nil {
-		
 		return config, err
 	}
 	if err = validateElevenLabsSettings(config); err != nil {
