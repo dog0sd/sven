@@ -1,6 +1,6 @@
 package config
 
-type elevenlabsVoiceSettings struct {
+type ElevenlabsVoiceSettings struct {
 	SimilarityBoost float32 `required:"false" default:"1.0"`
 	Stability       float32 `required:"false" default:"1.0"`
 	Style           float32 `required:"false" default:"0.0"`
@@ -9,11 +9,11 @@ type elevenlabsVoiceSettings struct {
 }
 
 type ElevenLabsConfig struct {
-	Enabled  bool                    `default:"false"`
-	VoiceId  string                  `required:"true"`
-	Model    string                  `required:"true"`
-	Token    string                  `required:"true"`
-	Settings elevenlabsVoiceSettings `required:"false"`
+	Enabled  bool                     `default:"false"`
+	VoiceId  string                   `required:"true"`
+	Model    string                   `required:"true"`
+	Token    string                   `required:"true"`
+	Settings ElevenlabsVoiceSettings `required:"false"`
 }
 
 type Config struct {

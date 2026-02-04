@@ -1,4 +1,4 @@
-//go:build oto
+//go:build windows || darwin
 
 package audio
 
