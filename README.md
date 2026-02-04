@@ -19,6 +19,8 @@ SVEN enables you to convert text to speech via a simple API or command line, wit
 - [Contributing](#contributing)
 - [TODO](#todo)
 
+Take skill for Claude Code: [SKILL.md](./SKILL.md).
+
 ---
 
 ## Features
@@ -54,10 +56,24 @@ elevenlabs:
 ./sven "Hello World!"
 ```
 
+**With voice settings:**
+```bash
+./sven -stability 0.5 -similarity 0.8 -speed 1.1 "Hello World!"
+```
+
 **With a specific audio backend:**
 ```bash
 ./sven -backend oto "Hello World!"
 ```
+
+**All CLI flags:**
+| Flag | Range | Description |
+|------|-------|-------------|
+| `-backend` | `pulse`, `oto` | Audio backend |
+| `-stability` | 0.0 - 1.0 | Voice stability |
+| `-similarity` | 0.0 - 1.0 | Voice similarity boost |
+| `-style` | 0.0 - 1.0 | Voice style |
+| `-speed` | 0.7 - 1.2 | Voice speed |
 
 **Server Mode:**
 ```bash
@@ -68,7 +84,7 @@ elevenlabs:
 ```bash
 ./mcp-server
 ```
-The MCP server exposes a `voice_it` tool over stdio, allowing AI assistants (e.g. Claude) to speak text aloud. Configure it via `ELEVENLABS_TOKEN` and `ELEVENLABS_VOICEID` environment variables.
+The MCP server exposes a `voice_it` tool over stdio, allowing AI assistants (e.g. Claude) to speak text aloud. Configure it via `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` environment variables.
 
 ---
 
