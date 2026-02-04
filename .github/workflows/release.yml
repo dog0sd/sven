@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 jobs:
-  goreleaser:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,20 +18,124 @@ jobs:
         with:
           fetch-depth: 0
 
-      - run: |
-          sudo apt update && sudo apt-get install -y libasound2-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse-dev gcc-aarch64-linux-gnu
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.22.5'
-      
+          go-version: '1.23'
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+      - name: Build linux/amd64
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+            go build -ldflags="-s -w" -o dist/sven-linux-amd64 ./cmd/sven
+
+      - name: Build linux/arm64
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
+            go build -ldflags="-s -w" -o dist/sven-linux-arm64 ./cmd/sven
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+          name: linux-binaries
+          path: dist/sven-linux-*
+
+  build-darwin:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build darwin/amd64
+        run: |
+          CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
+            go build -ldflags="-s -w" -o dist/sven-darwin-amd64 ./cmd/sven
+
+      - name: Build darwin/arm64
+        run: |
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
+            go build -ldflags="-s -w" -o dist/sven-darwin-arm64 ./cmd/sven
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: darwin-binaries
+          path: dist/sven-darwin-*
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build windows/amd64
+        run: |
+          $env:CGO_ENABLED=1
+          go build -ldflags="-s -w" -o dist/sven-windows-amd64.exe ./cmd/sven
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: dist/sven-windows-*.exe
+
+  release:
+    needs: [build-linux, build-darwin, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create archives
+        run: |
+          cd dist
+          # Linux
+          tar -czvf sven_Linux_x86_64.tar.gz sven-linux-amd64 -C .. README.md LICENSE
+          tar -czvf sven_Linux_arm64.tar.gz sven-linux-arm64 -C .. README.md LICENSE
+          # macOS
+          tar -czvf sven_Darwin_x86_64.tar.gz sven-darwin-amd64 -C .. README.md LICENSE
+          tar -czvf sven_Darwin_arm64.tar.gz sven-darwin-arm64 -C .. README.md LICENSE
+          # Windows
+          zip sven_Windows_x86_64.zip sven-windows-amd64.exe ../README.md ../LICENSE
+          # Checksums
+          sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/sven_Linux_x86_64.tar.gz
+            dist/sven_Linux_arm64.tar.gz
+            dist/sven_Darwin_x86_64.tar.gz
+            dist/sven_Darwin_arm64.tar.gz
+            dist/sven_Windows_x86_64.zip
+            dist/checksums.txt
+          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
