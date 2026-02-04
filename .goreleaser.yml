@@ -5,32 +5,97 @@ before:
     - go mod tidy
 
 builds:
-  - goos:
+  - id: sven-linux
+    binary: sven
+    main: ./cmd/sven
+    goos:
       - linux
     goarch:
       - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    overrides:
+      - goos: linux
+        goarch: arm64
+        env:
+          - CGO_ENABLED=1
+          - CC=aarch64-linux-gnu-gcc
+
+  - id: sven-darwin
     binary: sven
     main: ./cmd/sven
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+  - id: sven-windows
+    binary: sven
+    main: ./cmd/sven
+    goos:
+      - windows
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=x86_64-w64-mingw32-gcc
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 archives:
-  - name_template: >-
+  - id: unix
+    builds:
+      - sven-linux
+      - sven-darwin
+    formats:
+      - tar.gz
+    name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}arm64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
-    format_overrides:
-      - formats: [ 'zip' ]
     files:
       - README.md
       - LICENSE*
       - CHANGELOG*
-      - docs/**/*
+
+  - id: windows
+    builds:
+      - sven-windows
+    formats:
+      - zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - README.md
+      - LICENSE*
+      - CHANGELOG*
 
 checksum:
   name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch
 
 release:
   github:
