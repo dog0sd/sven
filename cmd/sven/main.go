@@ -19,10 +19,15 @@ func main() {
 	similarity := flag.Float64("similarity", -1, "voice similarity boost 0.0-1.0 (overrides config)")
 	style := flag.Float64("style", -1, "voice style 0.0-1.0 (overrides config)")
 	speed := flag.Float64("speed", -1, "voice speed 0.7-1.2 (overrides config)")
+
 	flag.Usage = func() {
 		fmt.Printf("Usage: %s [flags] [text]\n\n", os.Args[0])
-		fmt.Printf("CLI mode: %s 'Hello, world!'\n", os.Args[0])
-		fmt.Printf("Server mode: %s (no arguments)\n\n", os.Args[0])
+		fmt.Printf("CLI mode: `%s 'Hello, world!'`\n", os.Args[0])
+		fmt.Printf("Server mode: `%s`\n\n", os.Args[0])
+		fmt.Println("Commands:")
+		fmt.Println("  voices: prints available voices names and ids")
+		fmt.Println("  models: prints available models names and ids")
+
 		fmt.Println("Flags:")
 		fmt.Println("  -backend string")
 		fmt.Println("        audio backend: pulse or oto")
@@ -37,6 +42,46 @@ func main() {
 		os.Exit(0)
 	}
 	flag.Parse()
+
+	if flag.NArg() > 0 && (flag.Arg(0) == "models" || flag.Arg(0) == "voices") {
+		elCfg, err := config.LoadTokenConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+		switch flag.Arg(0) {
+		case "models":
+			models, err := tts.GetModels(elCfg)
+			if err != nil {
+				log.Fatalf("error fetching models: %v", err)
+			}
+			for i, m := range models {
+				fmt.Printf("Name: %s\n", m.Name)
+				fmt.Printf("ID:   %s\n", m.ModelId)
+				if m.Description != "" {
+					fmt.Printf("Desc: %s\n", m.Description)
+				}
+				if i < len(models)-1 {
+					fmt.Println()
+				}
+			}
+		case "voices":
+			voices, err := tts.GetVoices(elCfg)
+			if err != nil {
+				log.Fatalf("error fetching voices: %v", err)
+			}
+			for i, v := range voices {
+				fmt.Printf("Name: %s\n", v.Name)
+				fmt.Printf("ID:   %s\n", v.VoiceId)
+				if v.Description != "" {
+					fmt.Printf("Desc: %s\n", v.Description)
+				}
+				if i < len(voices)-1 {
+					fmt.Println()
+				}
+			}
+		}
+		return
+	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
