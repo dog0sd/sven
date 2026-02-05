@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -12,6 +12,29 @@ import (
 	"github.com/dog0sd/sven/internal/server"
 	"github.com/dog0sd/sven/internal/tts"
 )
+
+func initLogger(cfg config.Config) {
+	var level slog.Level
+	switch strings.ToLower(cfg.LogLevel) {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+
+	opts := &slog.HandlerOptions{Level: level}
+	var handler slog.Handler
+	if strings.ToLower(cfg.LogFormat) == "json" {
+		handler = slog.NewJSONHandler(os.Stderr, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stderr, opts)
+	}
+	slog.SetDefault(slog.New(handler))
+}
 
 func main() {
 	backend := flag.String("backend", "", "audio backend: pulse or oto (overrides config)")
@@ -46,13 +69,15 @@ func main() {
 	if flag.NArg() > 0 && (flag.Arg(0) == "models" || flag.Arg(0) == "voices") {
 		elCfg, err := config.LoadTokenConfig()
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("config error", "error", err)
+			os.Exit(1)
 		}
 		switch flag.Arg(0) {
 		case "models":
 			models, err := tts.GetModels(elCfg)
 			if err != nil {
-				log.Fatalf("error fetching models: %v", err)
+				slog.Error("error fetching models", "error", err)
+				os.Exit(1)
 			}
 			for i, m := range models {
 				fmt.Printf("Name: %s\n", m.Name)
@@ -67,7 +92,8 @@ func main() {
 		case "voices":
 			voices, err := tts.GetVoices(elCfg)
 			if err != nil {
-				log.Fatalf("error fetching voices: %v", err)
+				slog.Error("error fetching voices", "error", err)
+				os.Exit(1)
 			}
 			for i, v := range voices {
 				fmt.Printf("Name: %s\n", v.Name)
@@ -85,7 +111,21 @@ func main() {
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("error loading configuration: %v", err)
+		slog.Error("error loading configuration", "error", err)
+		os.Exit(1)
+	}
+
+	initLogger(cfg)
+
+	// Resolve voice name to ID if needed
+	if cfg.Elevenlabs.VoiceId == "" && cfg.Elevenlabs.VoiceName != "" {
+		voiceId, err := tts.ResolveVoiceName(cfg.Elevenlabs)
+		if err != nil {
+			slog.Error("voice name resolution failed", "error", err)
+			os.Exit(1)
+		}
+		cfg.Elevenlabs.VoiceId = voiceId
+		slog.Info("resolved voice name", "name", cfg.Elevenlabs.VoiceName, "voice_id", voiceId)
 	}
 
 	if *backend != "" {
@@ -106,25 +146,30 @@ func main() {
 
 	player, err := audio.NewPlayer(cfg.AudioBackend)
 	if err != nil {
-		log.Fatalf("error creating audio player: %v", err)
+		slog.Error("error creating audio player", "error", err)
+		os.Exit(1)
 	}
 
 	if flag.NArg() == 0 {
 		config.LogStartupInfo(cfg)
-		if err := server.StartServer(cfg.Port, cfg, player); err != nil {
-			log.Fatal("HTTP server failed: ", err)
+		if err := server.StartServer(cfg.Listen, cfg, player); err != nil {
+			slog.Error("HTTP server failed", "error", err)
+			os.Exit(1)
 		}
 	} else {
 		text := strings.TrimSpace(strings.Join(flag.Args(), " "))
 		if text == "" {
-			log.Fatal("no text provided")
+			slog.Error("no text provided")
+			os.Exit(1)
 		}
 		mp3Data, err := tts.Synthesize(cfg.Elevenlabs, text, "")
 		if err != nil {
-			log.Fatal("elevenlabs synthesis error: ", err)
+			slog.Error("elevenlabs synthesis error", "error", err)
+			os.Exit(1)
 		}
 		if err := player.Play(mp3Data); err != nil {
-			log.Fatal("playback error: ", err)
+			slog.Error("playback error", "error", err)
+			os.Exit(1)
 		}
 	}
 }

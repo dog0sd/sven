@@ -12,6 +12,13 @@ import (
 	"github.com/jfreymuth/pulse"
 )
 
+const (
+	pcmBufSize      = 8192
+	stereoChannels  = 2
+	int16MaxFloat   = 32768.0
+	pulseLatencyBuf = 300 * time.Millisecond
+)
+
 type PulsePlayer struct{}
 
 func (p *PulsePlayer) Play(mp3Data []byte) error {
@@ -22,7 +29,7 @@ func (p *PulsePlayer) Play(mp3Data []byte) error {
 
 	// Read all PCM data (16-bit signed, stereo)
 	var pcmBuf bytes.Buffer
-	buf := make([]byte, 8192)
+	buf := make([]byte, pcmBufSize)
 	for {
 		n, err := decoder.Read(buf)
 		if n > 0 {
@@ -43,11 +50,11 @@ func (p *PulsePlayer) Play(mp3Data []byte) error {
 	// Convert int16 to float32 for pulse
 	floatSamples := make([]float32, len(samples))
 	for i, s := range samples {
-		floatSamples[i] = float32(s) / 32768.0
+		floatSamples[i] = float32(s) / int16MaxFloat
 	}
 
 	sampleRate := decoder.SampleRate()
-	totalFrames := len(samples) / 2 // stereo
+	totalFrames := len(samples) / stereoChannels
 	audioDuration := time.Duration(int64(totalFrames)*1000/int64(sampleRate)) * time.Millisecond
 
 	client, err := pulse.NewClient()
@@ -91,7 +98,7 @@ func (p *PulsePlayer) Play(mp3Data []byte) error {
 	playback.Start()
 
 	// Wait for the audio to finish playing, plus buffer for PulseAudio latency
-	time.Sleep(audioDuration + 300*time.Millisecond)
+	time.Sleep(audioDuration + pulseLatencyBuf)
 
 	playback.Stop()
 	playback.Close()
