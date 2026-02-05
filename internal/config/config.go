@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/jinzhu/configor"
@@ -40,6 +40,9 @@ func LoadTokenConfig() (ElevenLabsConfig, error) {
 	if config.Elevenlabs.Token == "" {
 		return config.Elevenlabs, fmt.Errorf("elevenlabs token is required (set in config or ELEVENLABS_API_KEY env)")
 	}
+	if config.Elevenlabs.Timeout <= 0 {
+		config.Elevenlabs.Timeout = 30
+	}
 	return config.Elevenlabs, nil
 }
 
@@ -76,13 +79,24 @@ func LoadConfigFromEnv() (Config, error) {
 	if config.Elevenlabs.Model == "" {
 		config.Elevenlabs.Model = "eleven_turbo_v2_5"
 	}
+	config.Elevenlabs.Timeout = 30
 	config.Elevenlabs.Settings.Stability = 1.0
 	config.Elevenlabs.Settings.Speed = 1.0
 	config.AudioBackend = "pulse"
+
+	if err := validateElevenLabsSettings(config); err != nil {
+		return config, err
+	}
+	if err := validateAudioBackend(&config); err != nil {
+		return config, err
+	}
 	return config, nil
 }
 
 func validateElevenLabsSettings(config Config) error {
+	if config.Elevenlabs.VoiceId == "" && config.Elevenlabs.VoiceName == "" {
+		return fmt.Errorf("either voiceid or voicename must be set")
+	}
 	if config.Elevenlabs.Settings.SimilarityBoost > 1.0 {
 		return fmt.Errorf("similarityboost must be 0.0 <= x <= 1.0")
 	}
@@ -100,14 +114,19 @@ func validateElevenLabsSettings(config Config) error {
 
 // LogStartupInfo logs configuration details at startup.
 func LogStartupInfo(config Config) {
-	log.Printf("voice id: %s", config.Elevenlabs.VoiceId)
-	log.Printf("model id: %s", config.Elevenlabs.Model)
-	log.Printf("default similarity boost: %.2f", config.Elevenlabs.Settings.SimilarityBoost)
-	log.Printf("default stability: %.2f", config.Elevenlabs.Settings.Stability)
-	log.Printf("default style: %.2f", config.Elevenlabs.Settings.Style)
-	log.Printf("default speaker boost: %v", config.Elevenlabs.Settings.SpeakerBoost)
-	log.Printf("default speed: %.2f", config.Elevenlabs.Settings.Speed)
-	log.Printf("audio backend: %s", config.AudioBackend)
+	slog.Info("configuration loaded",
+		"voice_id", config.Elevenlabs.VoiceId,
+		"voice_name", config.Elevenlabs.VoiceName,
+		"model", config.Elevenlabs.Model,
+		"similarity_boost", config.Elevenlabs.Settings.SimilarityBoost,
+		"stability", config.Elevenlabs.Settings.Stability,
+		"style", config.Elevenlabs.Settings.Style,
+		"speaker_boost", config.Elevenlabs.Settings.SpeakerBoost,
+		"speed", config.Elevenlabs.Settings.Speed,
+		"audio_backend", config.AudioBackend,
+		"listen", config.Listen,
+		"timeout", config.Elevenlabs.Timeout,
+	)
 }
 
 func validateAudioBackend(config *Config) error {

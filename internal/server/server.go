@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,14 +15,16 @@ import (
 	"github.com/dog0sd/sven/internal/tts"
 )
 
-func StartServer(port string, cfg config.Config, player audio.Player) error {
+const shutdownTimeout = 5 * time.Second
+
+func StartServer(listen string, cfg config.Config, player audio.Player) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/tts", func(w http.ResponseWriter, r *http.Request) {
 		handleTTS(w, r, cfg, player)
 	})
 
 	server := &http.Server{
-		Addr:    port,
+		Addr:    listen,
 		Handler: mux,
 	}
 
@@ -32,24 +34,24 @@ func StartServer(port string, cfg config.Config, player audio.Player) error {
 
 	// Start server in a goroutine
 	go func() {
-		log.Printf("starting HTTP server on %s", port)
+		slog.Info("starting HTTP server", "listen", listen)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("HTTP server error: %v", err)
+			slog.Error("HTTP server error", "error", err)
 		}
 	}()
 
 	// Wait for shutdown signal
 	<-stop
-	log.Printf("shutting down server...")
+	slog.Info("shutting down server...")
 
 	// Create a deadline for graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
 		return err
 	}
-	log.Printf("server stopped")
+	slog.Info("server stopped")
 	return nil
 }
 
@@ -71,19 +73,19 @@ func handleTTS(w http.ResponseWriter, r *http.Request, cfg config.Config, player
 	reqBody := TTSRequest{}
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		log.Printf("error decoding request: %v", err)
+		slog.Error("request decode failed", "error", err)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 	reqConfig := mergeElevenLabsTTSSettings(reqBody, &cfg)
 	mp3Data, err := tts.Synthesize(reqConfig.Elevenlabs, reqBody.Text, reqBody.PText)
 	if err != nil {
-		log.Printf("elevenlabs error: %v", err)
+		slog.Error("elevenlabs error", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 	if err := player.Play(mp3Data); err != nil {
-		log.Printf("playback error: %v", err)
+		slog.Error("playback error", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}

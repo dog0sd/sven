@@ -14,6 +14,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "valid settings",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						SimilarityBoost: 0.5,
 						Stability:       0.8,
@@ -28,6 +29,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "similarity_boost too high",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						SimilarityBoost: 1.5,
 						Speed:           1.0,
@@ -40,6 +42,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "stability too high",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						Stability: 1.5,
 						Speed:     1.0,
@@ -52,6 +55,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "style too high",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						Style: 1.5,
 						Speed: 1.0,
@@ -64,6 +68,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "speed too high",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						Speed: 1.5,
 					},
@@ -75,6 +80,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "speed too low",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceId: "test-id",
 					Settings: ElevenlabsVoiceSettings{
 						Speed: 0.5,
 					},
@@ -86,6 +92,7 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 			name: "zero values are valid",
 			config: Config{
 				Elevenlabs: ElevenLabsConfig{
+					VoiceName: "test-voice",
 					Settings: ElevenlabsVoiceSettings{
 						SimilarityBoost: 0.0,
 						Stability:       0.0,
@@ -95,6 +102,17 @@ func TestValidateElevenLabsSettings(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "missing voice id and voice name",
+			config: Config{
+				Elevenlabs: ElevenLabsConfig{
+					Settings: ElevenlabsVoiceSettings{
+						Speed: 1.0,
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 

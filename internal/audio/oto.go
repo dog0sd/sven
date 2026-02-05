@@ -11,6 +11,12 @@ import (
 	"github.com/hajimehoshi/oto"
 )
 
+const (
+	otoChannels       = 2
+	otoBytesPerSample = 2
+	otoBufSize        = 8192
+)
+
 type OtoPlayer struct{}
 
 func (p *OtoPlayer) Play(mp3Data []byte) error {
@@ -19,7 +25,7 @@ func (p *OtoPlayer) Play(mp3Data []byte) error {
 		return fmt.Errorf("mp3 decode error: %v", err)
 	}
 
-	ctx, err := oto.NewContext(decoder.SampleRate(), 2, 2, 8192)
+	ctx, err := oto.NewContext(decoder.SampleRate(), otoChannels, otoBytesPerSample, otoBufSize)
 	if err != nil {
 		return fmt.Errorf("oto context error: %v", err)
 	}

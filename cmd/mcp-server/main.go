@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -24,7 +25,8 @@ func main() {
 	s.AddTool(voiceIt, elevenlabsSynthetic)
 
 	if err := server.ServeStdio(s); err != nil {
-		log.Fatal("server error: ", err)
+		slog.Error("server error", "error", err)
+		os.Exit(1)
 	}
 }
 

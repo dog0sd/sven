@@ -3,6 +3,7 @@ package tts
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Mliviu79/elevenlabs-go"
@@ -16,8 +17,15 @@ type VoiceInfo struct {
 	VoiceId     string
 }
 
+func timeoutDuration(elConfig config.ElevenLabsConfig) time.Duration {
+	if elConfig.Timeout <= 0 {
+		return 30 * time.Second
+	}
+	return time.Duration(elConfig.Timeout) * time.Second
+}
+
 func GetVoices(elConfig config.ElevenLabsConfig) ([]VoiceInfo, error) {
-	client := elevenlabs.NewClient(context.Background(), elConfig.Token, 30*time.Second)
+	client := elevenlabs.NewClient(context.Background(), elConfig.Token, timeoutDuration(elConfig))
 	voices, err := client.GetVoices()
 	if err != nil {
 		return nil, fmt.Errorf("request error: %v", err)
@@ -33,6 +41,20 @@ func GetVoices(elConfig config.ElevenLabsConfig) ([]VoiceInfo, error) {
 	return result, nil
 }
 
+// ResolveVoiceName finds a voice ID by case-insensitive name match.
+func ResolveVoiceName(elConfig config.ElevenLabsConfig) (string, error) {
+	voices, err := GetVoices(elConfig)
+	if err != nil {
+		return "", fmt.Errorf("fetching voices: %v", err)
+	}
+	for _, v := range voices {
+		if strings.EqualFold(v.Name, elConfig.VoiceName) {
+			return v.VoiceId, nil
+		}
+	}
+	return "", fmt.Errorf("voice %q not found", elConfig.VoiceName)
+}
+
 type ModelInfo struct {
 	Name        string
 	Description string
@@ -40,7 +62,7 @@ type ModelInfo struct {
 }
 
 func GetModels(elConfig config.ElevenLabsConfig) ([]ModelInfo, error) {
-	client := elevenlabs.NewClient(context.Background(), elConfig.Token, 30*time.Second)
+	client := elevenlabs.NewClient(context.Background(), elConfig.Token, timeoutDuration(elConfig))
 	models, err := client.GetModels()
 	if err != nil {
 		return nil, fmt.Errorf("request error: %v", err)
@@ -57,7 +79,7 @@ func GetModels(elConfig config.ElevenLabsConfig) ([]ModelInfo, error) {
 }
 
 func Synthesize(elConfig config.ElevenLabsConfig, text string, previousText string) ([]byte, error) {
-	client := elevenlabs.NewClient(context.Background(), elConfig.Token, 30*time.Second)
+	client := elevenlabs.NewClient(context.Background(), elConfig.Token, timeoutDuration(elConfig))
 	var voiceSettings elevenlabs.VoiceSettings
 	voiceSettings.SimilarityBoost = elConfig.Settings.SimilarityBoost
 	voiceSettings.Stability = elConfig.Settings.Stability

@@ -25,10 +25,10 @@ Take skill for Claude Code: [SKILL.md](./SKILL.md).
 
 ## Features
 - Text-to-speech conversion via HTTP API and CLI
-- MCP (Model Context Protocol) server mode for AI assistant integration
-- Support for ElevenLabs cloud TTS
+- MCP (stdio) and SKILL.md
+- Eleven v3 tags
 - Pluggable audio backends: PulseAudio/PipeWire (`pulse`) and ALSA (`oto`)
-- Customizable voice settings (speed, style, etc.)
+- Voice settings (stability, speed, style, etc.)
 - Context-aware synthesis with `ptext` (previous text)
 
 ---
@@ -44,8 +44,8 @@ Download the latest binary from the [releases](/releases) page.
 Permissions for API KEY:
 ```
 text_to_speech
+voices_read
 models_read (optional)
-voices_read (optional)
 ```
 
 ### Configuration
@@ -59,13 +59,25 @@ You can also set `ELEVENLABS_API_KEY` environment variable to override the token
 
 Example `sven.yml`:
 ```yaml
+# Listen address for HTTP server (default: ":8080")
+# listen: ":8080"
+# listen: "127.0.0.1:8080"
+
 # Audio backend: "pulse" (PulseAudio/PipeWire) or "oto" (ALSA)
 audiobackend: pulse
 
+# Logging: level (debug, info, warn, error), format (text, json)
+# loglevel: info
+# logformat: text
+
 elevenlabs:
   voiceid: iP95p4xoKVk53GoZ742B
+  # Or use voice name instead of voiceid:
+  # voicename: Rachel
   model: eleven_turbo_v2_5
   token: <PASTE YOUR ELEVENLABS API KEY>
+  # API timeout in seconds (default: 30)
+  # timeout: 30
 ```
 
 ### Running SVEN
@@ -103,7 +115,7 @@ elevenlabs:
 | `-style` | 0.0 - 1.0 | Voice style |
 | `-speed` | 0.7 - 1.2 | Voice speed |
 
-**Server Mode:**
+**Server Mode** (starts on `:8080` by default, configure with `listen` in config):
 ```bash
 ./sven
 ```
@@ -185,8 +197,8 @@ Contributions, issues, and feature requests are welcome! Please open an issue or
 - Specify exact output format for API request
 - Async audio playback
 - ~~Validate value boundaries in request and config at startup~~
-- Specify voice by name
-- Structured log format for the server
+- ~~Specify voice by name~~
+- ~~Structured log format for the server~~
 - Pronunciation dictionary support in config
 - ~~Optional previous_text for context~~
 - ~~MCP server mode~~
