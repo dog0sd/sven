@@ -9,21 +9,44 @@ import (
 	"github.com/dog0sd/sven/internal/audio"
 )
 
-func LoadConfig() (Config, error) {
-	var config Config
-
-	// Build config paths in priority order (first found wins)
-	configPaths := []string{"sven.yml", "sven.yaml"}
-
+func findConfigFiles() []string {
+	candidates := []string{"sven.yml", "sven.yaml"}
 	if home, err := os.UserHomeDir(); err == nil {
-		configPaths = append(configPaths,
+		candidates = append(candidates,
 			home+"/.config/sven.yml",
 			home+"/.config/sven.yaml",
 		)
 	}
-	configPaths = append(configPaths, "/etc/sven.yml", "/etc/sven.yaml")
+	candidates = append(candidates, "/etc/sven.yml", "/etc/sven.yaml")
+	var paths []string
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			paths = append(paths, p)
+		}
+	}
+	return paths
+}
 
-	err := configor.Load(&config, configPaths...)
+// LoadTokenConfig loads only the API token from config file and environment.
+// Use this when full config validation is not needed (e.g. listing voices/models).
+func LoadTokenConfig() (ElevenLabsConfig, error) {
+	var config Config
+	if paths := findConfigFiles(); len(paths) > 0 {
+		configor.New(&configor.Config{Silent: true}).Load(&config, paths...)
+	}
+	if envToken := os.Getenv("ELEVENLABS_API_KEY"); envToken != "" {
+		config.Elevenlabs.Token = envToken
+	}
+	if config.Elevenlabs.Token == "" {
+		return config.Elevenlabs, fmt.Errorf("elevenlabs token is required (set in config or ELEVENLABS_API_KEY env)")
+	}
+	return config.Elevenlabs, nil
+}
+
+func LoadConfig() (Config, error) {
+	var config Config
+
+	err := configor.Load(&config, findConfigFiles()...)
 	if err != nil {
 		return config, err
 	}

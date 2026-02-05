@@ -38,8 +38,26 @@ Take skill for Claude Code: [SKILL.md](./SKILL.md).
 ### Download
 Download the latest binary from the [releases](/releases) page.
 
+
+### Elevenlabs API KEY
+
+Permissions for API KEY:
+```
+text_to_speech
+models_read (optional)
+voices_read (optional)
+```
+
 ### Configuration
-Create a `sven.yml` file in the same directory as the binary with the following content:
+
+Configuration is loaded and merged from multiple locations (in priority order):
+1. `sven.yml` / `sven.yaml` in the current directory
+2. `~/.config/sven.yml` / `~/.config/sven.yaml`
+3. `/etc/sven.yml` / `/etc/sven.yaml`
+
+You can also set `ELEVENLABS_API_KEY` environment variable to override the token from config.
+
+Example `sven.yml`:
 ```yaml
 # Audio backend: "pulse" (PulseAudio/PipeWire) or "oto" (ALSA)
 audiobackend: pulse
@@ -64,6 +82,16 @@ elevenlabs:
 **With a specific audio backend:**
 ```bash
 ./sven -backend oto "Hello World!"
+```
+
+**List available voices:**
+```bash
+./sven voices
+```
+
+**List available models:**
+```bash
+./sven models
 ```
 
 **All CLI flags:**
@@ -123,6 +151,20 @@ curl -H "content-type: application/json" -d '{"text":"Hello World!","voice_setti
 ```bash
 curl -H "content-type: application/json" -d '{"text":"How are you?","ptext":"Hi, my love!"}' localhost:8080/tts
 ```
+
+---
+
+## Audio Tags (eleven_v3)
+
+The `eleven_v3` model supports inline audio tags using square brackets directly in text. These allow adding emotions, sound effects, pauses, and non-verbal sounds to speech.
+
+```bash
+./sven "[sighs] I can't believe it... [laughs] just kidding!"
+```
+
+Tags include emotions (`[happy]`, `[sad]`, `[angry]`, `[sarcastic]`, ...), laughter (`[laughs]`, `[chuckles]`, ...), breathing (`[sighs]`, `[exhales]`, ...), pauses (`[short pause]`, `[long pause]`), and sound effects (`[applause]`, `[gunshot]`, ...).
+
+See [SKILL.md](./SKILL.md) for the full list of supported tags.
 
 ---
 
