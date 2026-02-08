@@ -1,48 +1,35 @@
 ---
 name: sven-tts
-description: Simple Voice Enhanced Narrator - command-line utility use Elevenlabs for Text-to-Speech and seemless playback on Pulse
+description: Simple Voice Enhanced Narrator - CLI and HTTP server for Text-to-Speech via ElevenLabs
 license: GPLv3
 ---
 
 # Simple Voice Enhanced Narrator
 
-## Configuration
-
-Config is loaded from (in order): `./sven.yml`, `~/.config/sven.yml`, `/etc/sven.yml`.
-
-
-```yaml
-audiobackend: pulse  # pulse (Linux) or oto (Windows/macOS)
-elevenlabs:
-  voiceid: <voice-id>
-  model: eleven_turbo_v2_5
-  token: <api-key>
-  settings:
-    similarityboost: 0.8
-    stability: 0.7
-    style: 0.0
-    speed: 1.0
-```
-
 ## Usage
 
-### blocking cli-mode
+No config file required. Set `ELEVENLABS_API_KEY` env and use CLI flags.
+
+### CLI
 ```shell
-sven "Hello, world!"
+sven -voice Rachel "Hello, world!"
+sven -voice Adam -model eleven_v3 "[sighs] Finally... [laughs] just kidding!"
 ```
-**All CLI flags:**
+
 | Flag | Range | Description |
 |------|-------|-------------|
+| `-voice` | | Voice name (e.g. Rachel) |
+| `-model` | | Model ID (default: `eleven_turbo_v2_5`) |
 | `-backend` | `pulse`, `oto` | Audio backend |
 | `-stability` | 0.0 - 1.0 | Voice stability |
 | `-similarity` | 0.0 - 1.0 | Voice similarity boost |
 | `-style` | 0.0 - 1.0 | Voice style |
 | `-speed` | 0.7 - 1.2 | Voice speed |
 
-### HTTP 
+### HTTP
 
 ```shell
-sven
+sven -voice Rachel
 ```
 
 **POST /tts**

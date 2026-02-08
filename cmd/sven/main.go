@@ -37,21 +37,29 @@ func initLogger(cfg config.Config) {
 }
 
 func main() {
-	backend := flag.String("backend", "", "audio backend: pulse or oto (overrides config)")
-	stability := flag.Float64("stability", -1, "voice stability 0.0-1.0 (overrides config)")
-	similarity := flag.Float64("similarity", -1, "voice similarity boost 0.0-1.0 (overrides config)")
-	style := flag.Float64("style", -1, "voice style 0.0-1.0 (overrides config)")
-	speed := flag.Float64("speed", -1, "voice speed 0.7-1.2 (overrides config)")
+	voice := flag.String("voice", "", "voice name (e.g. Rachel)")
+	model := flag.String("model", "", "model ID (default: eleven_turbo_v2_5)")
+	backend := flag.String("backend", "", "audio backend: pulse or oto")
+	stability := flag.Float64("stability", -1, "voice stability 0.0-1.0")
+	similarity := flag.Float64("similarity", -1, "voice similarity boost 0.0-1.0")
+	style := flag.Float64("style", -1, "voice style 0.0-1.0")
+	speed := flag.Float64("speed", -1, "voice speed 0.7-1.2")
 
 	flag.Usage = func() {
 		fmt.Printf("Usage: %s [flags] [text]\n\n", os.Args[0])
-		fmt.Printf("CLI mode: `%s 'Hello, world!'`\n", os.Args[0])
-		fmt.Printf("Server mode: `%s`\n\n", os.Args[0])
+		fmt.Printf("Quick start:\n")
+		fmt.Printf("  export ELEVENLABS_API_KEY=your_key\n")
+		fmt.Printf("  %s -voice Rachel \"Hello, world!\"\n\n", os.Args[0])
+		fmt.Printf("Server mode: %s -voice Rachel\n\n", os.Args[0])
 		fmt.Println("Commands:")
-		fmt.Println("  voices: prints available voices names and ids")
-		fmt.Println("  models: prints available models names and ids")
-
+		fmt.Println("  voices    list available voices")
+		fmt.Println("  models    list available models")
+		fmt.Println()
 		fmt.Println("Flags:")
+		fmt.Println("  -voice string")
+		fmt.Println("        voice name (e.g. Rachel)")
+		fmt.Println("  -model string")
+		fmt.Println("        model ID (default: eleven_turbo_v2_5)")
 		fmt.Println("  -backend string")
 		fmt.Println("        audio backend: pulse or oto")
 		fmt.Println("  -stability float")
@@ -62,6 +70,8 @@ func main() {
 		fmt.Println("        voice style (0.0-1.0)")
 		fmt.Println("  -speed float")
 		fmt.Println("        voice speed (0.7-1.2)")
+		fmt.Println()
+		fmt.Println("Config file is optional. Set ELEVENLABS_API_KEY env and use -voice flag.")
 		os.Exit(0)
 	}
 	flag.Parse()
@@ -115,19 +125,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	initLogger(cfg)
-
-	// Resolve voice name to ID if needed
-	if cfg.Elevenlabs.VoiceId == "" && cfg.Elevenlabs.VoiceName != "" {
-		voiceId, err := tts.ResolveVoiceName(cfg.Elevenlabs)
-		if err != nil {
-			slog.Error("voice name resolution failed", "error", err)
-			os.Exit(1)
-		}
-		cfg.Elevenlabs.VoiceId = voiceId
-		slog.Info("resolved voice name", "name", cfg.Elevenlabs.VoiceName, "voice_id", voiceId)
+	// Apply CLI flag overrides
+	if *voice != "" {
+		cfg.Elevenlabs.VoiceName = *voice
+		cfg.Elevenlabs.VoiceId = ""
 	}
-
+	if *model != "" {
+		cfg.Elevenlabs.Model = *model
+	}
 	if *backend != "" {
 		cfg.AudioBackend = *backend
 	}
@@ -142,6 +147,25 @@ func main() {
 	}
 	if *speed >= 0 {
 		cfg.Elevenlabs.Settings.Speed = float32(*speed)
+	}
+
+	// Validate after all overrides applied
+	if err := config.ValidateConfig(&cfg); err != nil {
+		slog.Error("configuration error", "error", err)
+		os.Exit(1)
+	}
+
+	initLogger(cfg)
+
+	// Resolve voice name to ID if needed
+	if cfg.Elevenlabs.VoiceId == "" && cfg.Elevenlabs.VoiceName != "" {
+		voiceId, err := tts.ResolveVoiceName(cfg.Elevenlabs)
+		if err != nil {
+			slog.Error("voice name resolution failed", "error", err)
+			os.Exit(1)
+		}
+		cfg.Elevenlabs.VoiceId = voiceId
+		slog.Info("resolved voice name", "name", cfg.Elevenlabs.VoiceName, "voice_id", voiceId)
 	}
 
 	player, err := audio.NewPlayer(cfg.AudioBackend)
