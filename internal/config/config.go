@@ -49,23 +49,28 @@ func LoadTokenConfig() (ElevenLabsConfig, error) {
 func LoadConfig() (Config, error) {
 	var config Config
 
-	err := configor.Load(&config, findConfigFiles()...)
-	if err != nil {
-		return config, err
-	}
+	configor.New(&configor.Config{Silent: true}).Load(&config, findConfigFiles()...)
 
 	// Environment variables override config file (priority: env > config)
 	if envToken := os.Getenv("ELEVENLABS_API_KEY"); envToken != "" {
 		config.Elevenlabs.Token = envToken
 	}
 
-	if err = validateElevenLabsSettings(config); err != nil {
-		return config, err
-	}
-	if err = validateAudioBackend(&config); err != nil {
-		return config, err
-	}
 	return config, nil
+}
+
+// ValidateConfig validates the fully-merged configuration (after CLI flag overrides).
+func ValidateConfig(config *Config) error {
+	if config.Elevenlabs.Token == "" {
+		return fmt.Errorf("elevenlabs token is required (set ELEVENLABS_API_KEY env or token in config file)")
+	}
+	if err := validateElevenLabsSettings(*config); err != nil {
+		return err
+	}
+	if err := validateAudioBackend(config); err != nil {
+		return err
+	}
+	return nil
 }
 
 func LoadConfigFromEnv() (Config, error) {
@@ -95,7 +100,7 @@ func LoadConfigFromEnv() (Config, error) {
 
 func validateElevenLabsSettings(config Config) error {
 	if config.Elevenlabs.VoiceId == "" && config.Elevenlabs.VoiceName == "" {
-		return fmt.Errorf("either voiceid or voicename must be set")
+		return fmt.Errorf("voice is required (use -voice flag or set voiceid/voicename in config)")
 	}
 	if config.Elevenlabs.Settings.SimilarityBoost > 1.0 {
 		return fmt.Errorf("similarityboost must be 0.0 <= x <= 1.0")

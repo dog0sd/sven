@@ -48,7 +48,11 @@ func ResolveVoiceName(elConfig config.ElevenLabsConfig) (string, error) {
 		return "", fmt.Errorf("fetching voices: %v", err)
 	}
 	for _, v := range voices {
-		if strings.EqualFold(v.Name, elConfig.VoiceName) {
+		name := v.Name
+		if idx := strings.Index(name, " - "); idx >= 0 {
+			name = name[:idx]
+		}
+		if strings.EqualFold(name, elConfig.VoiceName) {
 			return v.VoiceId, nil
 		}
 	}

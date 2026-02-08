@@ -9,13 +9,13 @@ type ElevenlabsVoiceSettings struct {
 }
 
 type ElevenLabsConfig struct {
-	Enabled   bool                     `default:"false"`
-	VoiceId   string                   `required:"false"`
-	VoiceName string                   `required:"false"`
-	Model     string                   `required:"true"`
-	Token     string                   `required:"true"`
-	Timeout   int                      `default:"30"`
-	Settings  ElevenlabsVoiceSettings  `required:"false"`
+	Enabled   bool                    `default:"false"`
+	VoiceId   string                  `required:"false"`
+	VoiceName string                  `required:"false"`
+	Model     string                  `required:"false" default:"eleven_turbo_v2_5"`
+	Token     string                  `required:"false"`
+	Timeout   int                     `default:"30"`
+	Settings  ElevenlabsVoiceSettings `required:"false"`
 }
 
 type Config struct {
