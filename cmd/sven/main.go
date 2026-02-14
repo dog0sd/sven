@@ -13,6 +13,13 @@ import (
 	"github.com/dog0sd/sven/internal/tts"
 )
 
+// Set by goreleaser ldflags
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func initLogger(cfg config.Config) {
 	var level slog.Level
 	switch strings.ToLower(cfg.LogLevel) {
@@ -37,6 +44,7 @@ func initLogger(cfg config.Config) {
 }
 
 func main() {
+	showVersion := flag.Bool("version", false, "print version and exit")
 	voice := flag.String("voice", "", "voice name (e.g. Rachel)")
 	model := flag.String("model", "", "model ID (default: eleven_turbo_v2_5)")
 	backend := flag.String("backend", "", "audio backend: pulse or oto")
@@ -54,6 +62,7 @@ func main() {
 		fmt.Println("Commands:")
 		fmt.Println("  voices    list available voices")
 		fmt.Println("  models    list available models")
+		fmt.Println("  version   print version and exit")
 		fmt.Println()
 		fmt.Println("Flags:")
 		fmt.Println("  -voice string")
@@ -75,6 +84,11 @@ func main() {
 		os.Exit(0)
 	}
 	flag.Parse()
+
+	if *showVersion || (flag.NArg() > 0 && flag.Arg(0) == "version") {
+		fmt.Printf("sven %s (commit %s, built %s)\n", version, commit, date)
+		return
+	}
 
 	if flag.NArg() > 0 && (flag.Arg(0) == "models" || flag.Arg(0) == "voices") {
 		elCfg, err := config.LoadTokenConfig()
